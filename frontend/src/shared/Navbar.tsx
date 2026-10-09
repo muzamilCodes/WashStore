@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { axiosInstance } from '../utils/axiosInstance';
 
 interface NavbarProps {
   username?: string;
@@ -9,6 +10,16 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ username, profilePic }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
+
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await axiosInstance.post('/api/user/logout');
+    } catch (_) {}
+    document.cookie = 'P7WebApi_Auth_Token=; Max-Age=0; path=/;';
+    window.location.href = '/user/login';
+  };
 
   const navLinks = [
     { name: 'Home', path: '#home' },
@@ -343,6 +354,28 @@ const Navbar: React.FC<NavbarProps> = ({ username, profilePic }) => {
               </span>
             </div>
           </Link>
+
+          {username && username !== '' && username !== 'Guest' && (
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              style={{
+                backgroundColor: '#fee2e2',
+                color: '#ef4444',
+                fontSize: '11px',
+                fontWeight: 700,
+                padding: '6px 12px',
+                borderRadius: '999px',
+                border: '1px solid #fecdd3',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              🚪 Logout
+            </button>
+          )}
         </div>
       </nav>
     </header>

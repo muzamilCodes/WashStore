@@ -37,7 +37,7 @@ export const handlLogin =
             e.preventDefault()
 
             try {
-                dispatch(reqApi)
+                dispatch(reqApi())
                 const res = await axiosInstance.post<ApiResult<User>>("/api/user/login", formBody)
 
                 if (res.status === 200 && res.data.payload) {
@@ -62,7 +62,7 @@ export const fetchUser = () => async (dispatch: Dispatch): Promise<void> => {
 
     try {
 
-        dispatch(reqApi)
+        dispatch(reqApi())
 
         const res = await axiosInstance.get<ApiResult<User>>("/api/user/fetch")
 

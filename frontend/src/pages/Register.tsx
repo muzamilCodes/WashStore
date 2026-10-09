@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { userForm } from "../types/Types";
 import { handlRegister } from "../redux/Actions/UserActions";
-import { useDispatch } from "react-redux";
-import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
 import { handleChange } from "../utils/utils";
-import type { AppDispatch } from "../redux/Store";
+import type { AppDispatch, RootState } from "../redux/Store";
 
 const Register = () => {
   const [form, setForm] = useState<userForm>({
@@ -14,6 +14,14 @@ const Register = () => {
   });
 
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const user = useSelector((state: RootState) => state.loggedInUser);
+
+  useEffect(() => {
+    if (user && user.userId) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   return (
     <div
