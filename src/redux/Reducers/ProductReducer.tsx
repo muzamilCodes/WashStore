@@ -41,14 +41,12 @@ export const productReducer = createReducer(intialState, (builder: ActionReducer
         state.loading = true
     })
     builder.addCase(onSaleProductsSuccess, (state, action) => {
-        // state = action.payload
-        Object.assign(state.onSaleProducts, action.payload)
+        state.onSaleProducts = action.payload
         state.loading = false
     })
     
     builder.addCase(featuredProductsSuccess, (state, action) => {
-        // state = action.payload
-        Object.assign(state.featuredProducts, action.payload)
+        state.featuredProducts = action.payload
         state.loading = false
     })
     builder.addCase(productReqApiFailure, (state, action) => {

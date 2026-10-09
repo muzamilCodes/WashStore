@@ -2,7 +2,7 @@
 import type { ActionCreatorWithPayload } from "@reduxjs/toolkit"
 import type { ApiResult, Dispatch, Product } from "../../types/Types"
 import { axiosInstance } from "../../utils/axiosInstance"
-import {  onSaleProductsSuccess, productReqApi, productReqApiFailure } from "../Reducers/ProductReducer"
+import {  featuredProductsSuccess, onSaleProductsSuccess, productReqApi, productReqApiFailure } from "../Reducers/ProductReducer"
 
 
 
@@ -20,4 +20,4 @@ const fetchProducts = async (url: string, actionSuccess: ActionCreatorWithPayloa
 }
 
 export const fetchOnSaleProducts =  () => (dispatch : Dispatch) =>{ (fetchProducts("/api/product/OnSale" ,  onSaleProductsSuccess , dispatch ) )}
-export const fetchFeaturedProducts =  () => (dispatch : Dispatch) =>{ (fetchProducts("/api/product/Featured" ,  onSaleProductsSuccess , dispatch ) )}
+export const fetchFeaturedProducts =  () => (dispatch : Dispatch) =>{ (fetchProducts("/api/product/Featured" ,  featuredProductsSuccess , dispatch ) )}
