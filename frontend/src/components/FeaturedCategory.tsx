@@ -54,6 +54,10 @@ const FeaturedCategory: React.FC = () => {
         {categories.map((cat) => (
           <div
             key={cat.name}
+            onClick={() => {
+              const el = document.querySelector('#featured');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
             style={{
               backgroundColor: '#ffffff',
               borderRadius: '16px',

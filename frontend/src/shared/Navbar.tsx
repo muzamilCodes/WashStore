@@ -1,15 +1,30 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { axiosInstance } from '../utils/axiosInstance';
+import type { RootState, AppDispatch } from '../redux/Store';
+import { openCart } from '../redux/Reducers/CartReducer';
+import { openWishlist } from '../redux/Reducers/WishlistReducer';
+import type { Product } from '../types/Types';
 
 interface NavbarProps {
   username?: string;
   profilePic?: string;
+  onSelectProduct?: (product: Product) => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ username, profilePic }) => {
+const Navbar: React.FC<NavbarProps> = ({ username, profilePic, onSelectProduct }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const location = useLocation();
+  const dispatch = useDispatch<AppDispatch>();
+
+  const totalCartItems = useSelector((state: RootState) => state.cart.totalItems);
+  const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
+  const allProducts = useSelector((state: RootState) => [
+    ...state.products.featuredProducts,
+    ...state.products.onSaleProducts,
+  ]);
 
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -45,6 +60,16 @@ const Navbar: React.FC<NavbarProps> = ({ username, profilePic }) => {
     }
   };
 
+  // Live filtered search results
+  const matchingProducts = searchQuery.trim()
+    ? allProducts
+        .filter((p) =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase()))
+        )
+        .slice(0, 5)
+    : [];
+
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 100, backgroundColor: '#ffffff', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)' }}>
       {/* Top Banner Bar with INR details */}
@@ -69,7 +94,7 @@ const Navbar: React.FC<NavbarProps> = ({ username, profilePic }) => {
             onClick={(e) => handleNavClick(e, '#deals')}
             style={{ opacity: 0.95, textDecoration: 'underline', cursor: 'pointer', marginLeft: '6px', fontWeight: 700, color: '#fef08a' }}
           >
-            Shop Now →
+            Shop Deals →
           </a>
         </div>
       </div>
@@ -84,6 +109,7 @@ const Navbar: React.FC<NavbarProps> = ({ username, profilePic }) => {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '24px',
+          position: 'relative',
         }}
       >
         {/* Brand Logo */}
@@ -150,44 +176,97 @@ const Navbar: React.FC<NavbarProps> = ({ username, profilePic }) => {
           ))}
         </div>
 
-        {/* Search Bar */}
-        <div
-          style={{
-            flex: '1',
-            maxWidth: '360px',
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: '#f1f5f9',
-            borderRadius: '999px',
-            padding: '8px 16px',
-            gap: '10px',
-            border: '1px solid transparent',
-            transition: 'all 0.2s',
-          }}
-          onFocusCapture={(e) => (e.currentTarget.style.borderColor = '#6366f1')}
-          onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'transparent')}
-        >
-          <span style={{ color: '#94a3b8', fontSize: '16px' }}>🔍</span>
-          <input
-            type="text"
-            placeholder="Search phones, laptops, watches in ₹..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+        {/* Search Bar with Live Results Dropdown */}
+        <div style={{ flex: '1', maxWidth: '360px', position: 'relative' }}>
+          <div
             style={{
-              border: 'none',
-              background: 'transparent',
-              width: '100%',
-              fontSize: '13px',
-              color: '#1e293b',
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#f1f5f9',
+              borderRadius: '999px',
+              padding: '8px 16px',
+              gap: '10px',
+              border: searchFocused ? '1px solid #6366f1' : '1px solid transparent',
+              transition: 'all 0.2s',
             }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              style={{ background: 'none', color: '#94a3b8', fontSize: '12px' }}
+          >
+            <span style={{ color: '#94a3b8', fontSize: '16px' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search products in ₹..."
+              value={searchQuery}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 250)}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                width: '100%',
+                fontSize: '13px',
+                color: '#1e293b',
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{ background: 'none', color: '#94a3b8', fontSize: '12px', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Live Search Results Dropdown */}
+          {searchFocused && matchingProducts.length > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                marginTop: '8px',
+                backgroundColor: '#ffffff',
+                borderRadius: '16px',
+                boxShadow: '0 20px 30px rgba(0, 0, 0, 0.15)',
+                border: '1px solid #e2e8f0',
+                overflow: 'hidden',
+                zIndex: 999,
+              }}
             >
-              ✕
-            </button>
+              <div style={{ padding: '8px 14px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', backgroundColor: '#f8fafc' }}>
+                Quick Matches
+              </div>
+              {matchingProducts.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => {
+                    if (onSelectProduct) onSelectProduct(p);
+                    setSearchQuery('');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 14px',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #f1f5f9',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                >
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>{p.name}</div>
+                    <div style={{ fontSize: '12px', color: '#4f46e5', fontWeight: 800 }}>{p.price}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
@@ -208,10 +287,9 @@ const Navbar: React.FC<NavbarProps> = ({ username, profilePic }) => {
             ₹ INR
           </span>
 
-          {/* Wishlist Button */}
-          <a
-            href="#featured"
-            onClick={(e) => handleNavClick(e, '#featured')}
+          {/* Wishlist Button -> Opens Wishlist Drawer */}
+          <button
+            onClick={() => dispatch(openWishlist())}
             title="Wishlist"
             style={{
               position: 'relative',
@@ -231,31 +309,32 @@ const Navbar: React.FC<NavbarProps> = ({ username, profilePic }) => {
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
           >
             🤍
-            <span
-              style={{
-                position: 'absolute',
-                top: '-4px',
-                right: '-4px',
-                backgroundColor: '#f43f5e',
-                color: '#fff',
-                fontSize: '10px',
-                fontWeight: 700,
-                width: '18px',
-                height: '18px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              3
-            </span>
-          </a>
+            {wishlistItems.length > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-4px',
+                  backgroundColor: '#f43f5e',
+                  color: '#fff',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {wishlistItems.length}
+              </span>
+            )}
+          </button>
 
-          {/* Cart Button */}
-          <a
-            href="#deals"
-            onClick={(e) => handleNavClick(e, '#deals')}
+          {/* Cart Button -> Opens Cart Drawer */}
+          <button
+            onClick={() => dispatch(openCart())}
             title="Cart"
             style={{
               position: 'relative',
@@ -275,33 +354,36 @@ const Navbar: React.FC<NavbarProps> = ({ username, profilePic }) => {
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
           >
             🛍️
-            <span
-              style={{
-                position: 'absolute',
-                top: '-4px',
-                right: '-4px',
-                backgroundColor: '#4f46e5',
-                color: '#fff',
-                fontSize: '10px',
-                fontWeight: 700,
-                width: '18px',
-                height: '18px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              2
-            </span>
-          </a>
+            {totalCartItems > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-4px',
+                  backgroundColor: '#4f46e5',
+                  color: '#fff',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  animation: 'pulseGlow 2s infinite',
+                }}
+              >
+                {totalCartItems}
+              </span>
+            )}
+          </button>
 
           {/* Divider */}
           <div style={{ width: '1px', height: '28px', backgroundColor: '#e2e8f0' }} />
 
           {/* User Profile Pill */}
           <Link
-            to="/user/login"
+            to={username ? '/user/login' : '/user/login'}
             style={{
               display: 'flex',
               alignItems: 'center',

@@ -1,15 +1,28 @@
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import FeaturedCategory from '../components/FeaturedCategory';
 import HeroSection from '../components/HeroSection';
 import ProductCatalog from '../components/ProductCatalog';
 import type { AppDispatch, RootState } from '../redux/Store';
-import { useEffect } from 'react';
 import { fetchFeaturedProducts, fetchOnSaleProducts } from '../redux/Actions/ProductActions';
 import ProductCatalogWithTabs from '../components/ProductCatalogWithTabs';
 import Footer from '../shared/Footer';
+import CartDrawer from '../components/CartDrawer';
+import WishlistDrawer from '../components/WishlistDrawer';
+import CheckoutModal from '../components/CheckoutModal';
+import OrderSuccessModal from '../components/OrderSuccessModal';
+import ProductQuickViewModal from '../components/ProductQuickViewModal';
+import Toast from '../components/Toast';
+import { addToCart } from '../redux/Reducers/CartReducer';
+import type { Product } from '../types/Types';
 
-const Home = () => {
+const Home: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [confirmedOrder, setConfirmedOrder] = useState<any>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchOnSaleProducts());
@@ -17,12 +30,25 @@ const Home = () => {
   }, [dispatch]);
 
   const { featuredProducts, onSaleProducts } = useSelector((state: RootState) => state.products);
-
-  // Combine products for tabs showcase
   const allCatalogProducts = [...featuredProducts, ...onSaleProducts];
+
+  const handleAddToCart = (product: Product, quantity = 1) => {
+    dispatch(addToCart({ product, quantity }));
+    setToastMessage(`Added ${quantity}x "${product.name.slice(0, 20)}..." to Cart! 🛍️`);
+  };
+
+  const handleBuyNow = (product: Product, quantity = 1) => {
+    dispatch(addToCart({ product, quantity }));
+    setIsCheckoutOpen(true);
+  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', scrollBehavior: 'smooth' }}>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+      )}
+
       {/* Hero Banner Section */}
       <div id="home">
         <HeroSection />
@@ -35,12 +61,22 @@ const Home = () => {
 
       {/* On Sale Products Catalog with Flash Timer */}
       <div id="deals">
-        <ProductCatalog products={onSaleProducts} heading="On Sale Products (Hot Deals)" />
+        <ProductCatalog
+          products={onSaleProducts}
+          heading="On Sale Products (Hot Deals)"
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          onToast={(msg) => setToastMessage(msg)}
+        />
       </div>
 
       {/* Shop Section (Winter Clearance) */}
       <div id="shop">
-        <ProductCatalog products={featuredProducts} heading="Winter Clearance & Sports Gear" />
+        <ProductCatalog
+          products={featuredProducts}
+          heading="Winter Clearance & Sports Gear"
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          onToast={(msg) => setToastMessage(msg)}
+        />
       </div>
 
       {/* Dynamic Tab Filtered Catalog */}
@@ -50,6 +86,8 @@ const Home = () => {
           description="Browse top-rated Indian market electronics, laptops, flagship smartphones, and fitness gear."
           products={allCatalogProducts}
           tabs={["Mobiles", "Laptops", "Accessories", "Cameras", "Smart Watches", "Sports"]}
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          onToast={(msg) => setToastMessage(msg)}
         />
       </div>
 
@@ -139,6 +177,28 @@ const Home = () => {
 
       {/* Modern Store Footer */}
       <Footer />
+
+      {/* Modals & Slide-overs */}
+      <CartDrawer onCheckout={() => setIsCheckoutOpen(true)} />
+      <WishlistDrawer onNotify={(msg) => setToastMessage(msg)} />
+      
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        onOrderSuccess={(ord) => setConfirmedOrder(ord)}
+      />
+
+      <OrderSuccessModal
+        order={confirmedOrder}
+        onClose={() => setConfirmedOrder(null)}
+      />
+
+      <ProductQuickViewModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={handleAddToCart}
+        onBuyNow={handleBuyNow}
+      />
     </div>
   );
 };

@@ -1,27 +1,42 @@
 import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import type { Product } from '../types/Types';
+import type { RootState, AppDispatch } from '../redux/Store';
+import { addToCart } from '../redux/Reducers/CartReducer';
+import { toggleWishlist } from '../redux/Reducers/WishlistReducer';
 
 interface ProductCardProps {
   products: Product[];
+  onSelectProduct?: (product: Product) => void;
+  onToast?: (message: string) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ products }) => {
-  const [wishlist, setWishlist] = useState<number[]>([]);
-  const [addedCart, setAddedCart] = useState<number[]>([]);
+const ProductCard: React.FC<ProductCardProps> = ({ products, onSelectProduct, onToast }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
+  const [addedIds, setAddedIds] = useState<number[]>([]);
 
-  const toggleWishlist = (e: React.MouseEvent, id: number) => {
+  const isWishlisted = (id: number) => wishlistItems.some((item) => item.id === id);
+
+  const handleWishlistToggle = (e: React.MouseEvent, p: Product) => {
     e.stopPropagation();
-    setWishlist((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+    dispatch(toggleWishlist(p));
+    const active = isWishlisted(p.id);
+    if (onToast) {
+      onToast(active ? `Removed from Wishlist 🤍` : `Added "${p.name.slice(0, 18)}..." to Wishlist ❤️`);
+    }
   };
 
-  const handleAddToCart = (e: React.MouseEvent, id: number) => {
+  const handleAdd = (e: React.MouseEvent, p: Product) => {
     e.stopPropagation();
-    setAddedCart((prev) => [...prev, id]);
+    dispatch(addToCart({ product: p, quantity: 1 }));
+    setAddedIds((prev) => [...prev, p.id]);
+    if (onToast) {
+      onToast(`Added "${p.name.slice(0, 18)}..." to Cart! 🛍️`);
+    }
     setTimeout(() => {
-      setAddedCart((prev) => prev.filter((item) => item !== id));
-    }, 2000);
+      setAddedIds((prev) => prev.filter((id) => id !== p.id));
+    }, 1800);
   };
 
   if (!products || products.length === 0) {
@@ -54,13 +69,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ products }) => {
       }}
     >
       {products.map((p: Product) => {
-        const isWishlisted = wishlist.includes(p.id);
-        const isAdded = addedCart.includes(p.id);
+        const wishActive = isWishlisted(p.id);
+        const isAdded = addedIds.includes(p.id);
         const rating = p.rating || 4;
 
         return (
           <div
             key={p.id}
+            onClick={() => onSelectProduct && onSelectProduct(p)}
             style={{
               backgroundColor: '#ffffff',
               borderRadius: '20px',
@@ -119,13 +135,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ products }) => {
               </div>
 
               <button
-                onClick={(e) => toggleWishlist(e, p.id)}
+                onClick={(e) => handleWishlistToggle(e, p)}
                 title="Wishlist"
                 style={{
                   width: '34px',
                   height: '34px',
                   borderRadius: '50%',
-                  backgroundColor: isWishlisted ? '#fee2e2' : '#ffffff',
+                  backgroundColor: wishActive ? '#fee2e2' : '#ffffff',
                   border: '1px solid #e2e8f0',
                   display: 'flex',
                   alignItems: 'center',
@@ -133,9 +149,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ products }) => {
                   fontSize: '16px',
                   boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
                   transition: 'all 0.2s',
+                  cursor: 'pointer',
                 }}
               >
-                {isWishlisted ? '❤️' : '🤍'}
+                {wishActive ? '❤️' : '🤍'}
               </button>
             </div>
 
@@ -255,7 +272,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ products }) => {
 
               {/* Add to Cart Button */}
               <button
-                onClick={(e) => handleAddToCart(e, p.id)}
+                onClick={(e) => handleAdd(e, p)}
                 style={{
                   width: '100%',
                   padding: '10px',

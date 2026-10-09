@@ -5,9 +5,11 @@ import type { Product } from "../types/Types";
 interface ProductCatalogProps {
   products: Product[];
   heading: string;
+  onSelectProduct?: (product: Product) => void;
+  onToast?: (message: string) => void;
 }
 
-const ProductCatalog: React.FC<ProductCatalogProps> = ({ products, heading }) => {
+const ProductCatalog: React.FC<ProductCatalogProps> = ({ products, heading, onSelectProduct, onToast }) => {
   const [timeLeft, setTimeLeft] = useState({ hours: 7, minutes: 34, seconds: 48 });
 
   useEffect(() => {
@@ -151,7 +153,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ products, heading }) =>
       </div>
 
       {/* Product Cards */}
-      <ProductCard products={products} />
+      <ProductCard products={products} onSelectProduct={onSelectProduct} onToast={onToast} />
 
       {/* Bottom Indicator Dots */}
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", marginTop: "32px" }}>

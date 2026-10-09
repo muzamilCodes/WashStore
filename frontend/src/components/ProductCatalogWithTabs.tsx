@@ -7,6 +7,8 @@ interface ProductCatalogWithTabsProp {
   description: string;
   products: Product[];
   tabs: string[];
+  onSelectProduct?: (product: Product) => void;
+  onToast?: (message: string) => void;
 }
 
 const ProductCatalogWithTabs = ({
@@ -14,6 +16,8 @@ const ProductCatalogWithTabs = ({
   description,
   products,
   tabs,
+  onSelectProduct,
+  onToast,
 }: ProductCatalogWithTabsProp) => {
   const allTabs = ["All", ...tabs.filter((t) => t.toLowerCase() !== "all")];
   const [activeTab, setActiveTab] = useState<string>("All");
@@ -175,7 +179,7 @@ const ProductCatalogWithTabs = ({
       </div>
 
       {/* Filtered Products Card Grid */}
-      <ProductCard products={filteredArr} />
+      <ProductCard products={filteredArr} onSelectProduct={onSelectProduct} onToast={onToast} />
     </section>
   );
 };
